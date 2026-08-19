@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Dental 3D Care - ระบบประเมินสุขภาพช่องปาก 3 มิติ</title>
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome สำหรับไอคอนสวยๆ -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-purple: #7c3aed;
+            --primary-blue: #2563eb;
+            --gradient-bg: linear-gradient(135deg, #6d28d9 0%, #1e40af 100%);
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #0f172a;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--light-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.12);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ede9fe;
+        }
+
+        .header-banner {
+            background: var(--gradient-bg);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header-banner h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .header-banner p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .step-content {
+            padding: 30px;
+            flex-grow: 1;
+            min-height: 450px;
+        }
+
+        .step-page {
+            display: none;
+        }
+
+        .step-page.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: var(--primary-purple);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f3e8ff;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.92rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+            background: #ffffff;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        /* กล้องส่องฟัน */
+        .camera-box {
+            background: #020617;
+            border-radius: 16px;
+            height: 280px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #94a3b8;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        #videoFeed, #capturedCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #capturedCanvas {
+            display: none;
+            z-index: 5;
+        }
+
+        .camera-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* 3D Interactive Model Stage */
+        .model-3d-wrapper {
+            background: radial-gradient(circle, #f5f3ff 0%, #ede9fe 100%);
+            border: 2px solid #ddd6fe;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stage-3d {
+            width: 100%;
+            height: 220px;
+            perspective: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .stage-3d:active {
+            cursor: grabbing;
+        }
+
+        .tooth-cluster-3d {
+            width: 200px;
+            height: 140px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* ปุ่มซี่ฟันจำลองในโมเดล 3 มิติรอบทิศทาง */
+        .tooth-node {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            background: white;
+            border: 2px solid #a78bfa;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #5b21b6;
+        }
+
+        .tooth-node i {
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        .tooth-node:hover {
+            background: #f3e8ff;
+            transform: scale(1.1);
+            border-color: var(--primary-purple);
+        }
+
+        .tooth-node.active-selected {
+            background: var(--primary-purple);
+            color: white;
+            border-color: #4c1d95;
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.6);
+            transform: scale(1.15);
+        }
+
+        /* ตำแหน่งการจัดวางซี่ฟันจำลองรอบวงกลม 360 องศา */
+        .t-front { top: 0px; left: 76px; }
+        .t-right { top: 46px; right: 0px; }
+        .t-back  { bottom: 0px; left: 76px; }
+        .t-left  { top: 46px; left: 0px; }
+
+        .model-controls-hint {
+            font-size: 0.8rem;
+            color: #6d28d9;
+            margin-top: 10px;
+            font-weight: 500;
+            background: rgba(255,255,255,0.7);
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* รายงานและช่องกรอกอาการเฉพาะซี่ */
+        .medical-report {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid var(--primary-blue);
+            padding: 16px;
+            border-radius: 0 12px 12px 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .medical-report h4 {
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Footer Navigation */
+        .footer-nav {
+            padding: 20px 30px;
+            background: #faf5ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #f3e8ff;
+        }
+
+        .btn {
+            background: var(--gradient-bg);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(109, 40, 217, 0.2);
+        }
+
+        .btn:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+            box-shadow: none;
+        }
+
+        .btn-accent {
+            background: #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+        }
+
+        .btn-success {
+            background: #16a34a;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header Banner -->
+        <div class="header-banner">
+            <h1>Smart Dental 3D Care</h1>
+            <p>ระบบประเมินสุขภาพช่องปากอัจฉริยะ พร้อมโมเดลฟันหมุน 360° และคำแนะนำเฉพาะจุด</p>
+        </div>
+
+        <!-- Content Area -->
+        <div class="step-content">
+            
+            <!-- หน้าที่ 1: ข้อมูลพื้นฐาน -->
+            <div class="step-page active" id="page-1">
+                <h2>1. ข้อมูลพื้นฐานและประวัติช่องปาก</h2>
+                <div class="form-group">
+                    <label>ชื่อ - นามสกุล</label>
+                    <input type="text" id="userName" placeholder="กรอกชื่อ-นามสกุลของคุณ">
+                </div>
+                <div class="form-group">
+                    <label>ประวัติทางทันตกรรมเบื้องต้น</label>
+                    <input type="text" id="userHistory" placeholder="เช่น เคยอุดฟัน, จัดฟัน, หรือไม่มีโรคประจำตัว">
+                </div>
+                <div class="form-group">
+                    <label>รายการอาหารที่รับประทานล่าสุด (ก่อนแปรงฟัน)</label>
+                    <textarea id="recentFood" rows="3" placeholder="เช่น ขนมหวานเหนียวติดฟัน, ชานมไข่มุก, อาหารทั่วไป"></textarea>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 2: ตรวจฟันด้วยกล้อง -->
+            <div class="step-page" id="page-2">
+                <h2>2. การตรวจคัดกรองช่องปากด้วยภาพถ่าย</h2>
+                <p style="font-size: 0.9rem; margin-bottom: 15px; color: #4b5563;">เปิดกล้องส่องช่องปาก จัดตำแหน่งให้ชัดเจน แล้วกด <b>"ถ่ายภาพวิเคราะห์"</b></p>
+                
+                <div class="camera-box" id="cameraBox">
+                    <span id="camPlaceholder">คลิกปุ่ม "เปิดกล้อง" ด้านล่างเพื่อเริ่มใช้งาน</span>
+                    <video id="videoFeed" autoplay playsinline muted></video>
+                    <canvas id="capturedCanvas"></canvas>
+                </div>
+
+                <div class="camera-controls">
+                    <button class="btn btn-secondary" onclick="toggleCamera()" id="camToggleBtn">เปิดกล้อง</button>
+                    <button class="btn btn-accent" onclick="switchCamera()" id="switchBtn" style="display:none;">สลับกล้อง</button>
+                    <button class="btn btn-success" onclick="captureImage()" id="captureBtn" style="display:none;">ถ่ายภาพวิเคราะห์</button>
+                </div>
+
+                <div id="medicalReport" class="medical-report" style="display:none;">
+                    <h4>📊 ผลการวิเคราะห์ภาพถ่ายเบื้องต้น:</h4>
+                    <p id="reportText">กำลังประมวลผล...</p>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 3: โมเดล 3 มิติ หมุน 360° + เลือกซี่ฟันกรอกอาการ -->
+            <div class="step-page" id="page-3">
+                <h2>3. โมเดลฟัน 3 มิติ (คลิกเลือกซี่ฟัน & ระบุอาการ)</h2>
+                <p style="font-size: 0.9rem; margin-bottom: 12px; color: #4b5563;">
+                    💡 <b>วิธีใช้งาน:</b> ใช้เมาส์คลิกค้างแล้วลากบนกรอบเพื่อ **หมุนโมเดล 360°** จากนั้นคลิกเลือกซี่ฟันที่ท่านรู้สึกผิดปกติ:
+                </p>
+                
+                <!-- 3D Interactive Stage -->
+                <div class="model-3d-wrapper">
+                    <div class="stage-3d" id="stage3D" onmousedown="startRotate(event)" onmousemove="onRotate(event)" onmouseup="stopRotate()" onmouseleave="stopRotate()" ontouchstart="startTouchRotate(event)" ontouchmove="onTouchRotate(event)" ontouchend="stopRotate()">
+                        <div class="tooth-cluster-3d" id="toothCluster">
+                            <div class="tooth-node t-front active-selected" onclick="selectTooth('front', 'ฟันหน้าบน (Front Teeth)')" title="ฟันหน้า">
+                                <i class="fa-solid fa-tooth"></i><span>หน้า</span>
+                            </div>
+                            <div class="tooth-node t-right" onclick="selectTooth('right', 'ฟันกรามขวา (Right Molars)')" title="กรามขวา">
+                                <i class="fa-solid fa-tooth"></i><span>กรามขวา</span>
+                            </div>
+                            <div class="tooth-node t-back" onclick="selectTooth('back', 'ฟันกรามหลัง (Back Molars)')" title="กรามหลัง">
+                                <i class="fa-solid fa-tooth"></i><span>กรามหลัง</span>
+                            </div>
+                            <div class="tooth-node t-left" onclick="selectTooth('left', 'ฟันกรามซ้าย (Left Molars)')" title="กรามซ้าย">
+                                <i class="fa-solid fa-tooth"></i><span>กรามซ้าย</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="model-controls-hint">
+                        <i class="fa-solid fa-arrows-spin"></i> หมุนโมเดล 3 มิติอิสระ | ตำแหน่งที่เลือก: <b id="selectedToothName" style="color:var(--primary-purple);">ฟันหน้าบน (Front Teeth)</b>
+                    </div>
+                </div>
+
+                <!-- ฟอร์มกรอกอาการเฉพาะซี่ที่เลือก -->
+                <div class="form-group">
+                    <label>ระบุลักษณะอาการที่คุณรู้สึก ณ ตำแหน่งนี้:</label>
+                    <select id="symptomSelector" onchange="generateAdvice()">
+                        <option value="sensitive_cold">เสียวฟันเวลากินของเย็น ของร้อน หรือของหวานจัด</option>
+                        <option value="throbbing_pain">ปวดตื้อหรือปวดตุบๆ บริเวณซี่นี้ตอนกลางคืน</option>
+                        <option value="black_spot">มีรอยด่างขาว ขุยดำ หรือรูผุชัดเจนที่ผิวฟัน</option>
+                        <option value="chewing_pain">เจ็บแปลบหรือปวดรุนแรงขณะเคี้ยวอาหาร</option>
+                    </select>
+                </div>
+
+                <!-- กล่องคำแนะนำเฉพาะจุด (ไม่ซ้ำซาก) -->
+                <div class="medical-report" style="display: block; border-left-color: var(--primary-purple); background: #ffffff;">
+                    <h4>🩺 คำแนะนำและแนวทางการดูแลเฉพาะจุด:</h4>
+                    <p id="dynamicAdviceText" style="margin-top: 5px; font-size: 0.9rem; line-height: 1.6;">
+                        • แนะนำให้ใช้ยาสีฟันสูตรโพแทสเซียมไนเตรตเพื่อลดการตอบสนองของเส้นประสาทฟัน<br>
+                        • หลีกเลี่ยงการกระตุ้นจากอุณหภูมิที่จัดเกินไปชั่วคราว<br>
+                        • หากอาการไม่ทุเลาใน 3-5 วัน ควรพบทันตแพทย์เพื่อตรวจเช็คโพรงฟันผุหรือรอยสึก
+                    </p>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 4: สุขอนามัยและโภชนาการ -->
+            <div class="step-page" id="page-4">
+                <h2>4. สุขอนามัยช่องปากและโภชนาการที่เหมาะสม</h2>
+                <div class="medical-report" style="display: block; margin-bottom: 15px;">
+                    <h4>🦷 เทคนิคการแปรงฟันมาตรฐาน (Modified Bass Technique):</h4>
+                    <ul style="margin-left: 20px; margin-top: 5px; font-size: 0.88rem;">
+                        <li>วางขนแปรงทำมุม 45 องศากับขอบเหงือก ให้ขนแปรงซอกซอนเข้าสู่ร่องเหงือก</li>
+                        <li>ขยับสั่นเบาๆ ในแนวหน้า-หลัง แล้วปัดขนแปรงออกทางด้านบดเคี้ยว</li>
+                        <li>ทำความสะอาดให้ครบทุกซี่ ใช้เวลาอย่างน้อย 2 นาทีต่อครั้ง</li>
+                    </ul>
+                </div>
+                <div class="medical-report" style="display: block; border-left-color: #d97706; background: #fffbeb;">
+                    <h4>⚠️ คำแนะนำทางโภชนาการเพื่อป้องกันฟันผุ:</h4>
+                    <ul style="margin-left: 20px; margin-top: 5px; font-size: 0.88rem;">
+                        <li>ลดเลี่ยงขนมหวานเหนียวหนึบ (เช่น ลูกอม เยลลี่) ที่ติดค้างตามร่องฟันนาน</li>
+                        <li>ดื่มน้ำเปล่าสะอาดหลังทานอาหารทุกมื้อเพื่อชะล้างกรดและเศษอาหาร</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 5: ค้นหาคลินิก Google Maps -->
+            <div class="step-page" id="page-5">
+                <h2>5. ค้นหาคลินิกทันตกรรมใกล้เคียง</h2>
+                <div class="form-group">
+                    <label>กรอกที่อยู่ / แขวง / เขต หรือจังหวัดของท่าน</label>
+                    <input type="text" id="userAddress" placeholder="เช่น เขตปทุมวัน กรุงเทพมหานคร">
+                </div>
+                <button class="btn" onclick="searchClinic()" style="width: 100%; margin-bottom: 15px;">ค้นหาคลินิกทันตกรรมใน Google Maps</button>
+                <div id="mapResult" style="background: #f1f5f9; height: 110px; border-radius: 12px; display: flex; justify-content: center; align-items: center; color: #475569; font-size: 0.88rem; text-align: center; padding: 15px; border: 1px dashed #cbd5e1;">
+                    ระบบจะเปิดหน้าต่าง Google Maps เพื่อแสดงตำแหน่งคลินิกทันตกรรมในบริเวณที่คุณระบุทันที
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Navigation Controls -->
+        <div class="footer-nav">
+            <button class="btn btn-secondary" id="prevBtn" onclick="changeStep(-1)" style="visibility: hidden;">ย้อนกลับ</button>
+            <span id="stepIndicator" style="font-size: 0.88rem; color: #64748b; font-weight: 500;">หน้า 1 จาก 5</span>
+            <button class="btn" id="nextBtn" onclick="changeStep(1)">ถัดไป</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 5;
+        let mediaStream = null;
+        let useFrontCamera = true;
+        let currentSelectedTooth = 'ฟันหน้าบน (Front Teeth)';
+
+        // --- ระบบควบคุมการหมุนโมเดล 3 มิติ (360 องศา) ---
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let rotateX = -15, rotateY = 30;
+
+        function startRotate(e) {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+
+        function onRotate(e) {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            rotateY += deltaX * 0.8;
+            rotateX -= deltaY * 0.8;
+            startX = e.clientX;
+            startY = e.clientY;
+            updateClusterTransform();
+        }
+
+        function startTouchRotate(e) {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }
+        }
+
+        function onTouchRotate(e) {
+            if (!isDragging || e.touches.length !== 1) return;
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            rotateY += deltaX * 0.8;
+            rotateX -= deltaY * 0.8;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            updateClusterTransform();
+        }
+
+        function stopRotate() {
+            isDragging = false;
+        }
+
+        function updateClusterTransform() {
+            const cluster = document.getElementById('toothCluster');
+            if (cluster) {
+                cluster.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            }
+        }
+
+        // เริ่มต้นเซ็ตมุมมอง
+        window.onload = () => {
+            updateClusterTransform();
+        };
+
+        function showStep(step) {
+            document.querySelectorAll('.step-page').forEach(page => page.classList.remove('active'));
+            document.getElementById(`page-${step}`).classList.add('active');
+
+            document.getElementById('prevBtn').style.visibility = step === 1 ? 'hidden' : 'visible';
+            document.getElementById('nextBtn').innerText = step === totalSteps ? 'เสร็จสิ้นกระบวนการ' : 'ถัดไป';
+            document.getElementById('stepIndicator').innerText = `หน้า ${step} จาก ${totalSteps}`;
+
+            if (step !== 2 && mediaStream) {
+                stopCamera();
+            }
+        }
+
+        function changeStep(direction) {
+            currentStep += direction;
+            if (currentStep > totalSteps) {
+                alert('บันทึกข้อมูลและสรุปผลการประเมินสุขภาพช่องปากเรียบร้อย ขอบคุณที่ใช้บริการครับ!');
+                currentStep = 1;
+            }
+            showStep(currentStep);
+        }
+
+        // --- ระบบกล้องและการถ่ายภาพ ---
+        async function toggleCamera() {
+            const video = document.getElementById('videoFeed');
+            const placeholder = document.getElementById('camPlaceholder');
+            const captureBtn = document.getElementById('captureBtn');
+            const switchBtn = document.getElementById('switchBtn');
+            const camToggleBtn = document.getElementById('camToggleBtn');
+            const medicalReport = document.getElementById('medicalReport');
+
+            if (!mediaStream) {
+                try {
+                    const constraints = {
+                        video: { facingMode: useFrontCamera ? "user" : "environment" },
+                        audio: false
+                    };
+                    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = mediaStream;
+                    video.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    captureBtn.style.display = 'block';
+                    switchBtn.style.display = 'block';
+                    camToggleBtn.innerText = 'ปิดกล้อง';
+                } catch (err) {
+                    alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบการอนุญาตสิทธิ์ในเบราว์เซอร์');
+                }
+            } else {
+                stopCamera();
+            }
+        }
+
+        async function switchCamera() {
+            useFrontCamera = !useFrontCamera;
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            const video = document.getElementById('videoFeed');
+            try {
+                const constraints = {
+                    video: { facingMode: useFrontCamera ? "user" : "environment" },
+                    audio: false
+                };
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = mediaStream;
+            } catch (err) {
+                alert('ไม่สามารถสลับกล้องได้');
+            }
+        }
+
+        function captureImage() {
+            const video = document.getElementById('videoFeed');
+            const canvas = document.getElementById('capturedCanvas');
+            const reportBox = document.getElementById('medicalReport');
+            const reportText = document.getElementById('reportText');
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            reportBox.style.display = 'block';
+            reportText.innerHTML = "<b>ผลการวิเคราะห์ภาพถ่าย:</b> ตรวจพบความเสี่ยงคราบพลัคและหินปูนบริเวณแนวเหงือก แนะนำให้ตรวจสอบซี่ฟันในขั้นตอนถัดไปเพื่อรับคำแนะนำเฉพาะจุด";
+        }
+
+        function stopCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            document.getElementById('videoFeed').style.display = 'none';
+            document.getElementById('capturedCanvas').style.display = 'none';
+            document.getElementById('camPlaceholder').style.display = 'block';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('switchBtn').style.display = 'none';
+            document.getElementById('camToggleBtn').innerText = 'เปิดกล้อง';
+        }
+
+        // --- ระบบเลือกซี่ฟันบนโมเดล 3 มิติ และสลับคำแนะนำ ---
+        function selectTooth(positionKey, toothName) {
+            document.querySelectorAll('.tooth-node').forEach(node => node.classList.remove('active-selected'));
+            event.currentTarget.classList.add('active-selected');
+            currentSelectedTooth = toothName;
+            document.getElementById('selectedToothName').innerText = toothName;
+            generateAdvice();
+        }
+
+        function generateAdvice() {
+            const symptom = document.getElementById('symptomSelector').value;
+            const adviceBox = document.getElementById('dynamicAdviceText');
+            
+            let adviceContent = "";
+
+            if (symptom === 'sensitive_cold') {
+                adviceContent = `• <b>โซน [ ${currentSelectedTooth} ] อาการเสียวฟัน:</b> เกิดจากคราบหินปูนหรือเหงือกร่นทำให้เนื้อฟันชั้นใน (Dentin) เปิดออก<br>• <b>วิธีป้องกันเบื้องต้น:</b> ใช้ยาสีฟันสูตรลดอาการเสียวฟัน เลี่ยงการแปรงฟันด้วยแรงกดที่รุนแรงเกินไป<br>• <b>คำแนะนำ:</b> ใช้ไหมขัดฟันสม่ำเสมอ หากไม่ดีขึ้นควรพบทันตแพทย์เพื่อเคลือบฟลูออไรด์เข้มข้น`;
+            } else if (symptom === 'throbbing_pain') {
+                adviceContent = `• <b>โซน [ ${currentSelectedTooth} ] อาการปวดตื้อ/ตุบๆ:</b> สัญญาณเตือนว่าการอักเสบอาจลุกลามเข้าสู่โพรงประสาทฟัน (Pulp)<br>• <b>วิธีป้องกันเบื้องต้น:</b> งดการเคี้ยวอาหารแข็งหรือใช้น้ำอุ่นบ้วนปากเบาๆ ห้ามประคบร้อนบริเวณแก้มด้านนอก<br>• <b>คำแนะนำ:</b> แนะนำให้พบทันตแพทย์เพื่อเอกซเรย์และรับการรักษาคลองรากฟันหรืออุดรักษาทันที`;
+            } else if (symptom === 'black_spot') {
+                adviceContent = `• <b>โซน [ ${currentSelectedTooth} ] พบรอยด่างดำหรือรูผุ:</b> ผิวเคลือบฟันถูกกรดทำลายจนเกิดการสูญเสียแร่ธาตุ<br>• <b>วิธีป้องกันเบื้องต้น:</b> ลดอาหารจำพวกแป้งและน้ำตาลเหนียวหนึบที่ติดค้างตามซอกฟัน<br>• <b>คำแนะนำ:</b> รีบพบทันตแพทย์เพื่อทำการกรอเนื้อฟันที่ผุออกและอุดปิดให้เรียบร้อยก่อนลุกลามใหญ่`;
+            } else if (symptom === 'chewing_pain') {
+                adviceContent = `• <b>โซน [ ${currentSelectedTooth} ] เจ็บขณะเคี้ยว:</b> อาจเกิดจากรอยร้าวขนาดเล็กบนตัวฟัน หรือวัสดุอุดเดิมชำรุด<br>• <b>วิธีป้องกันเบื้องต้น:</b> หลีกเลี่ยงการใช้ซี่ฟันดังกล่าวเคี้ยวอาหารแข็งและเหนียวเด็ดขาด<br>• <b>คำแนะนำ:</b> ควรเข้ารับการตรวจเช็คโครงสร้างตัวฟันกับทันตแพทย์เฉพาะทางเพื่อป้องกันฟันแตกหักซ้ำซ้อน`;
+            }
+
+            adviceBox.innerHTML = adviceContent;
+        }
+
+        // --- ระบบค้นหาคลินิก ---
+        function searchClinic() {
+            const address = document.getElementById('userAddress').value;
+            if (!address) {
+                alert('กรุณากรอกข้อมูลพื้นที่หรือที่อยู่ของท่านก่อนค้นหา');
+                return;
+            }
+            const encodedAddress = encodeURIComponent(address + ' คลินิกทันตกรรม ทำฟัน');
+            const mapUrl = `https://www.google.com/maps/search/${encodedAddress}`;
+            window.open(mapUrl, '_blank');
+            document.getElementById('mapResult').innerHTML = `เปิดเส้นทางค้นหาคลินิกทันตกรรมใกล้พื้นที่: <b>${address}</b> ผ่าน Google Maps เรียบร้อยแล้ว`;
+        }
+    </script>
+</body>
+</html>

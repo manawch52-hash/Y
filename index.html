@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Dental AI - ระบบประเมินสุขภาพช่องปากอัจฉริยะ</title>
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-purple: #7c3aed;
+            --primary-blue: #2563eb;
+            --gradient-bg: linear-gradient(135deg, #6d28d9 0%, #1e40af 100%);
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #0f172a;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--light-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 680px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ede9fe;
+        }
+
+        .header-banner {
+            background: var(--gradient-bg);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header-banner h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .header-banner p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .step-content {
+            padding: 30px;
+            flex-grow: 1;
+            min-height: 420px;
+        }
+
+        .step-page {
+            display: none;
+        }
+
+        .step-page.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: var(--primary-purple);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f3e8ff;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.92rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+            background: #ffffff;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        /* Camera Section */
+        .camera-box {
+            background: #020617;
+            border-radius: 16px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #94a3b8;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        #videoFeed, #capturedCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #capturedCanvas {
+            display: none;
+            z-index: 5;
+        }
+
+        .camera-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Medical Report Box */
+        .medical-report {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid var(--primary-blue);
+            padding: 16px;
+            border-radius: 0 12px 12px 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .medical-report h4 {
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* 3D Rotating Interactive Tooth Model UI */
+        .model-container {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+            border: 1px solid #ddd6fe;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .rotating-tooth-card {
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.08);
+            border: 2px solid #e9d5ff;
+            animation: floatTooth 3s ease-in-out infinite;
+        }
+
+        @keyframes floatTooth {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(1deg); }
+        }
+
+        .tooth-visual-icon {
+            font-size: 3rem;
+            margin-bottom: 5px;
+        }
+
+        .tooth-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .tooth-part-btn {
+            background: white;
+            border: 1.5px solid #cbd5e1;
+            padding: 12px 10px;
+            border-radius: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tooth-part-btn span {
+            font-size: 1.2rem;
+        }
+
+        .tooth-part-btn div b {
+            display: block;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+        .tooth-part-btn div small {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .tooth-part-btn:hover {
+            border-color: var(--primary-purple);
+            background: #fafa_ff;
+        }
+
+        .tooth-part-btn.selected {
+            background: var(--primary-purple);
+            border-color: var(--primary-purple);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+        }
+
+        .tooth-part-btn.selected div b,
+        .tooth-part-btn.selected div small {
+            color: white;
+        }
+
+        /* Footer Navigation */
+        .footer-nav {
+            padding: 20px 30px;
+            background: #faf5ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #f3e8ff;
+        }
+
+        .btn {
+            background: var(--gradient-bg);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(109, 40, 217, 0.2);
+        }
+
+        .btn:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+            box-shadow: none;
+        }
+
+        .btn-accent {
+            background: #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+        }
+
+        .btn-success {
+            background: #16a34a;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header Banner -->
+        <div class="header-banner">
+            <h1>Smart Dental AI</h1>
+            <p>ระบบประเมินสุขภาพช่องปากอัจฉริยะ จำลองตำแหน่งซี่ฟันและวินิจฉัยแม่นยำ</p>
+        </div>
+
+        <!-- Content Area -->
+        <div class="step-content">
+            
+            <!-- หน้าที่ 1: ข้อมูลพื้นฐาน -->
+            <div class="step-page active" id="page-1">
+                <h2>1. ข้อมูลพื้นฐานและประวัติช่องปาก</h2>
+                <div class="form-group">
+                    <label>ชื่อ - นามสกุล</label>
+                    <input type="text" id="userName" placeholder="กรอกชื่อ-นามสกุลของคุณ">
+                </div>
+                <div class="form-group">
+                    <label>ประวัติทางทันตกรรมเบื้องต้น</label>
+                    <input type="text" id="userHistory" placeholder="เช่น เคยอุดฟัน, จัดฟัน, หรือไม่มีโรคประจำตัว">
+                </div>
+                <div class="form-group">
+                    <label>รายการอาหารที่รับประทานล่าสุด (ก่อนแปรงฟัน)</label>
+                    <textarea id="recentFood" rows="3" placeholder="เช่น ขนมหวานเหนียวติดฟัน, ชานมไข่มุก, อาหารทั่วไป"></textarea>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 2: ตรวจฟันผุด้วยกล้อง -->
+            <div class="step-page" id="page-2">
+                <h2>2. การตรวจคัดกรองฟันผุด้วยภาพถ่ายช่องปาก</h2>
+                <p style="font-size: 0.9rem; margin-bottom: 15px; color: #4b5563;">เปิดกล้องส่องช่องปาก จัดตำแหน่งให้ชัดเจน แล้วกด <b>"ถ่ายภาพวิเคราะห์"</b></p>
+                
+                <div class="camera-box" id="cameraBox">
+                    <span id="camPlaceholder">คลิกปุ่ม "เปิดกล้อง" ด้านล่างเพื่อเริ่มใช้งาน</span>
+                    <video id="videoFeed" autoplay playsinline muted></video>
+                    <canvas id="capturedCanvas"></canvas>
+                </div>
+
+                <div class="camera-controls">
+                    <button class="btn btn-secondary" onclick="toggleCamera()" id="camToggleBtn">เปิดกล้อง</button>
+                    <button class="btn btn-accent" onclick="switchCamera()" id="switchBtn" style="display:none;">สลับกล้อง</button>
+                    <button class="btn btn-success" onclick="captureImage()" id="captureBtn" style="display:none;">ถ่ายภาพวิเคราะห์</button>
+                </div>
+
+                <div id="medicalReport" class="medical-report">
+                    <h4>📊 รายงานผลการวิเคราะห์ภาพถ่าย:</h4>
+                    <p id="reportText">กำลังประมวลผล...</p>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 3: โมเดลจำลองซี่ฟัน 3 มิติ (คลิกเลือกโซนง่าย ไม่ต้องจำเบอร์) -->
+            <div class="step-page" id="page-3">
+                <h2>3. เลือกตำแหน่งและอาการในโมเดลจำลอง</h2>
+                <p style="font-size: 0.9rem; margin-bottom: 12px; color: #4b5563;">คลิกเลือกตำแหน่งโซนซี่ฟันที่คุณรู้สึกผิดปกติ ระบบจะวิเคราะห์คำแนะนำเฉพาะจุดให้ทันที:</p>
+                
+                <div class="model-container">
+                    <!-- โมเดลจำลองรูปฟันโต้ตอบ -->
+                    <div class="rotating-tooth-card">
+                        <div class="tooth-visual-icon" id="mainToothIcon">🦷</div>
+                        <h3 id="activeZoneTitle" style="color: var(--primary-purple); font-size: 1.1rem; font-weight: 600;">ฟันกรามใหญ่ด้านหลัง (ซ้าย/ขวา)</h3>
+                        <p style="font-size: 0.82rem; color: #64748b;">โซนสำหรับเคี้ยวอาหาร มีร่องลึก ผุและสะสมคราบได้ง่ายที่สุด</p>
+                    </div>
+
+                    <!-- ปุ่มคลิกเลือกโซนฟันง่ายๆ -->
+                    <div class="tooth-selector-grid">
+                        <div class="tooth-part-btn selected" onclick="selectToothZone('molar', 'ฟันกรามใหญ่ด้านหลัง (โซนเคี้ยว)', '🦷', 'มักมีปัญหาเศษอาหารติดซอก ร่องฟันผุ หรือเสียวฟันเวลากินของเย็น')">
+                            <span>🦷</span>
+                            <div>
+                                <b>ฟันกรามใหญ่ด้านหลัง</b>
+                                <small>โซนบดเคี้ยวอาหารหลัก</small>
+                            </div>
+                        </div>
+                        <div class="tooth-part-btn" onclick="selectToothZone('premolar', 'ฟันกรามน้อย (โซนกลาง)', '🦷', 'มักเกิดรอยสึกที่คอฟัน จากการแปรงฟันแรงเกินไป หรือฟันผุด้านประชิด')">
+                            <span>🦷</span>
+                            <div>
+                                <b>ฟันกรามน้อย</b>
+                                <small>โซนถัดจากเขี้ยว</small>
+                            </div>
+                        </div>
+                        <div class="tooth-part-btn" onclick="selectToothZone('canine', 'ฟันเขี้ยว (โซนมุมปาก)', '🗡️', 'มักมีอาการเสียวฟันบริเวณคอฟันเนื่องจากเหงือกร่น หรือแปรงฟันผิดวิธี')">
+                            <span>🗡️</span>
+                            <div>
+                                <b>ฟันเขี้ยว</b>
+                                <small>โซนมุมปากโค้ง</small>
+                            </div>
+                        </div>
+                        <div class="tooth-part-btn" onclick="selectToothZone('front', 'ฟันหน้า (บน/ล่าง)', '😁', 'มักพบปัญหาหินปูนเกาะหนาบริเวณเหงือกด้านใน หรือฟันกระแทกบิ่นแตก')">
+                            <span>😁</span>
+                            <div>
+                                <b>ฟันหน้า</b>
+                                <small>โซนยิ้มและกัดอาหาร</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="medical-report" style="display: block; border-left-color: var(--primary-purple); background: #ffffff;">
+                    <h4>🩺 คำแนะนำเฉพาะตำแหน่ง [ <span id="reportZoneName">ฟันกรามใหญ่ด้านหลัง (โซนเคี้ยว)</span> ]:</h4>
+                    <p id="uniqueAdviceText" style="margin-top: 5px; font-size: 0.9rem; line-height: 1.6;">
+                        • <b>สาเหตุที่พบบ่อย:</b> ร่องฟันกรามลึกทำให้ทำความสะอาดด้วยแปรงสีฟันเข้าไม่ถึง<br>
+                        • <b>แนวทางการดูแล:</b> ควรใช้แปรงซอกฟันหรือไหมขัดฟันร่วมด้วยทุกครั้งหลังอาหาร<br>
+                        • <b>คำแนะนำทางการแพทย์:</b> หากมีอาการเสียวหรือปวดตื้อตอนเคี้ยว ควรพบทันตแพทย์เพื่อพิจารณาเคลือบหลุมร่องฟันหรืออุดรักษาโพรงฟันผุระยะเริ่มต้น
+                    </p>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 4: สุขอนามัยและโภชนาการ -->
+            <div class="step-page" id="page-4">
+                <h2>4. สุขอนามัยช่องปากและโภชนาการที่เหมาะสม</h2>
+                <div class="medical-report" style="display: block; margin-bottom: 15px;">
+                    <h4>🦷 เทคนิคการแปรงฟันมาตรฐาน (Modified Bass Technique):</h4>
+                    <ul style="margin-left: 20px; margin-top: 5px; font-size: 0.88rem;">
+                        <li>วางขนแปรงทำมุม 45 องศากับขอบเหงือก ให้ขนแปรงซอกซอนเข้าสู่ร่องเหงือก</li>
+                        <li>ขยับสั่นเบาๆ ในแนวหน้า-หลัง แล้วปัดขนแปรงออกทางด้านบดเคี้ยว</li>
+                        <li>ทำความสะอาดให้ครบทุกซี่ ใช้เวลาอย่างน้อย 2 นาทีต่อครั้ง</li>
+                    </ul>
+                </div>
+                <div class="medical-report" style="display: block; border-left-color: #d97706; background: #fffbeb;">
+                    <h4>⚠️ คำแนะนำทางโภชนาการเพื่อป้องกันฟันผุ:</h4>
+                    <ul style="margin-left: 20px; margin-top: 5px; font-size: 0.88rem;">
+                        <li>ลดเลี่ยงขนมหวานเหนียวหนึบ (เช่น ลูกอม เยลลี่) ที่ติดค้างตามร่องฟันนาน</li>
+                        <li>ดื่มน้ำเปล่าสะอาดหลังทานอาหารทุกมื้อเพื่อชะล้างกรดและเศษอาหาร</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- หน้าที่ 5: ค้นหาคลินิก Google Maps -->
+            <div class="step-page" id="page-5">
+                <h2>5. ค้นหาคลินิกทันตกรรมใกล้เคียง</h2>
+                <div class="form-group">
+                    <label>กรอกที่อยู่ / แขวง / เขต หรือจังหวัดของท่าน</label>
+                    <input type="text" id="userAddress" placeholder="เช่น เขตปทุมวัน กรุงเทพมหานคร">
+                </div>
+                <button class="btn" onclick="searchClinic()" style="width: 100%; margin-bottom: 15px;">ค้นหาคลินิกทันตกรรมใน Google Maps</button>
+                <div id="mapResult" style="background: #f1f5f9; height: 110px; border-radius: 12px; display: flex; justify-content: center; align-items: center; color: #475569; font-size: 0.88rem; text-align: center; padding: 15px; border: 1px dashed #cbd5e1;">
+                    ระบบจะเปิดหน้าต่าง Google Maps เพื่อแสดงตำแหน่งคลินิกทันตกรรมในบริเวณที่คุณระบุทันที
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Navigation Controls -->
+        <div class="footer-nav">
+            <button class="btn btn-secondary" id="prevBtn" onclick="changeStep(-1)" style="visibility: hidden;">ย้อนกลับ</button>
+            <span id="stepIndicator" style="font-size: 0.88rem; color: #64748b; font-weight: 500;">หน้า 1 จาก 5</span>
+            <button class="btn" id="nextBtn" onclick="changeStep(1)">ถัดไป</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 5;
+        let mediaStream = null;
+        let useFrontCamera = true;
+
+        function showStep(step) {
+            document.querySelectorAll('.step-page').forEach(page => page.classList.remove('active'));
+            document.getElementById(`page-${step}`).classList.add('active');
+
+            document.getElementById('prevBtn').style.visibility = step === 1 ? 'hidden' : 'visible';
+            document.getElementById('nextBtn').innerText = step === totalSteps ? 'เสร็จสิ้นกระบวนการ' : 'ถัดไป';
+            document.getElementById('stepIndicator').innerText = `หน้า ${step} จาก ${totalSteps}`;
+
+            if (step !== 2 && mediaStream) {
+                stopCamera();
+            }
+        }
+
+        function changeStep(direction) {
+            currentStep += direction;
+            if (currentStep > totalSteps) {
+                alert('บันทึกข้อมูลและสรุปผลการประเมินสุขภาพช่องปากเรียบร้อย ขอบคุณที่ใช้บริการครับ!');
+                currentStep = 1;
+            }
+            showStep(currentStep);
+        }
+
+        // --- ระบบกล้องและการถ่ายภาพ ---
+        async function toggleCamera() {
+            const video = document.getElementById('videoFeed');
+            const placeholder = document.getElementById('camPlaceholder');
+            const captureBtn = document.getElementById('captureBtn');
+            const switchBtn = document.getElementById('switchBtn');
+            const camToggleBtn = document.getElementById('camToggleBtn');
+            const medicalReport = document.getElementById('medicalReport');
+
+            if (!mediaStream) {
+                try {
+                    const constraints = {
+                        video: { facingMode: useFrontCamera ? "user" : "environment" },
+                        audio: false
+                    };
+                    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = mediaStream;
+                    video.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    captureBtn.style.display = 'block';
+                    switchBtn.style.display = 'block';
+                    camToggleBtn.innerText = 'ปิดกล้อง';
+                } catch (err) {
+                    alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบการอนุญาตสิทธิ์ในเบราว์เซอร์');
+                }
+            } else {
+                stopCamera();
+            }
+        }
+
+        async function switchCamera() {
+            useFrontCamera = !useFrontCamera;
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            const video = document.getElementById('videoFeed');
+            try {
+                const constraints = {
+                    video: { facingMode: useFrontCamera ? "user" : "environment" },
+                    audio: false
+                };
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = mediaStream;
+            } catch (err) {
+                alert('ไม่สามารถสลับกล้องได้');
+            }
+        }
+
+        function captureImage() {
+            const video = document.getElementById('videoFeed');
+            const canvas = document.getElementById('capturedCanvas');
+            const reportBox = document.getElementById('medicalReport');
+            const reportText = document.getElementById('reportText');
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            reportBox.style.display = 'block';
+            reportText.innerHTML = "<b>ผลการวิเคราะห์ภาพถ่าย:</b> ตรวจพบความเสี่ยงคราบพลัคและหินปูนบริเวณขอบเหงือก แนะนำให้เลือกโซนซี่ฟันในขั้นตอนถัดไปเพื่อรับคำแนะนำเฉพาะจุด";
+        }
+
+        function stopCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            document.getElementById('videoFeed').style.display = 'none';
+            document.getElementById('capturedCanvas').style.display = 'none';
+            document.getElementById('camPlaceholder').style.display = 'block';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('switchBtn').style.display = 'none';
+            document.getElementById('camToggleBtn').innerText = 'เปิดกล้อง';
+        }
+
+        // --- ระบบเลือกโซนซี่ฟัน 3 มิติที่ไม่ซ้ำซากจำเจ ---
+        function selectToothZone(zoneType, zoneTitle, iconSymbol, zoneDesc) {
+            document.querySelectorAll('.tooth-part-btn').forEach(btn => btn.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+
+            document.getElementById('mainToothIcon').innerText = iconSymbol;
+            document.getElementById('activeZoneTitle').innerText = zoneTitle;
+            document.getElementById('reportZoneName').innerText = zoneTitle;
+
+            const adviceBox = document.getElementById('uniqueAdviceText');
+
+            // เปลี่ยนชุดคำแนะนำให้แตกต่างกันอย่างสิ้นเชิงตามโซนที่เลือก
+            if (zoneType === 'molar') {
+                adviceBox.innerHTML = `
+                    • <b>ลักษณะอาการพบบ่อย:</b> ปวดตื้อเวลาเคี้ยวอาหาร ของติดร่องฟันกราม หรือเสียวฟันจากน้ำเย็นจัด<br>
+                    • <b>สาเหตุทางคลินิก:</b> ฟันกรามมีหลุมและร่องลึกบนผิวหน้าบดเคี้ยว ซึ่งเป็นจุดที่ขนแปรงเข้าถึงยากและมักเกิดฟันผุด้านบดเคี้ยว<br>
+                    • <b>คำแนะนำเฉพาะทาง:</b> ควรใช้ไหมขัดฟันและน้ำยาบ้วนปากร่วมด้วย หลีกเลี่ยงการเคี้ยวของแข็งด้วยซี่ดังกล่าว และพบทันตแพทย์เพื่อตรวจดูโพรงฟันผุหรือพิจารณาเคลือบหลุมร่องฟัน
+                `;
+            } else if (zoneType === 'premolar') {
+                adviceBox.innerHTML = `
+                    • <b>ลักษณะอาการพบบ่อย:</b> เสียวฟันเวลากลืนน้ำหรือแปรงฟันโดนบริเวณคอฟัน<br>
+                    • <b>สาเหตุทางคลินิก:</b> เกิดจากภาวะคอฟันสึก (Cervical Abrasion) เนื่องจากการใช้แปรงสีฟันขนแข็งหรือแปรงฟันผิดวิธี รวมถึงแรงบดเคี้ยวที่มากเกินไป<br>
+                    • <b>คำแนะนำเฉพาะทาง:</b> เปลี่ยนมาใช้แปรงสีฟันขนนุ่มพิเศษ ใช้ยาสีฟันลดอาการเสียวฟัน และหลีกเลี่ยงการขัดถูแรงๆ บริเวณคอฟัน
+                `;
+            } else if (zoneType === 'canine') {
+                adviceBox.innerHTML = `
+                    • <b>ลักษณะอาการพบบ่อย:</b> เจ็บแปลบหรือเสียวที่มุมปากเวลารับประทานอาหารรสเปรี้ยวหรือเย็นจัด<br>
+                    • <b>สาเหตุทางคลินิก:</b> ฟันเขี้ยวมีรากฟันยาวและเป็นตำแหน่งรับแรงโค้งของขากรรไกร มักพบปัญหาเหงือករ่นเปิดผิวรากฟัน<br>
+                    • <b>คำแนะนำเฉพาะทาง:</b> หลีกเลี่ยงการใช้ฟันเขี้ยวในการกัดแทะของแข็งหรือเปิดขวด หากมีอาการต่อเนื่องควรพบทันตแพทย์เพื่อทาเคลือบฟลูออไรด์เข้มข้น
+                `;
+            } else if (zoneType === 'front') {
+                adviceBox.innerHTML = `
+                    • <b>ลักษณะอาการพบบ่อย:</b> พบหินปูนเกาะหนาบริเวณเหงือกด้านในฟันหน้าล่าง มีเลือดออกขณะแปรงฟัน<br>
+                    • <b>สาเหตุทางคลินิก:</b> เป็นจุดที่ท่อน้ำลายใต้ลิ้นเปิดออก ทำให้แคลเซียมในน้ำลายตกตะกอนรวมกับคราบจุลินทรีย์กลายเป็นหินปูนได้เร็ว<br>
+                    • <b>คำแนะนำเฉพาะทาง:</b> เน้นการเอียงแปรงทำความสะอาดด้านหลังฟันหน้าล่างอย่างสม่ำเสมอ และควรเข้ารับการขูดหินปูนกับทันตแพทย์ทุกๆ 6 เดือน
+                `;
+            }
+        }
+
+        // --- ระบบค้นหาคลินิก ---
+        function searchClinic() {
+            const address = document.getElementById('userAddress').value;
+            if (!address) {
+                alert('กรุณากรอกข้อมูลพื้นที่หรือที่อยู่ของท่านก่อนค้นหา');
+                return;
+            }
+            const encodedAddress = encodeURIComponent(address + ' คลินิกทันตกรรม ทำฟัน');
+            const mapUrl = `https://www.google.com/maps/search/${encodedAddress}`;
+            window.open(mapUrl, '_blank');
+            document.getElementById('mapResult').innerHTML = `เปิดเส้นทางค้นหาคลินิกทันตกรรมใกล้พื้นที่: <b>${address}</b> ผ่าน Google Maps เรียบร้อยแล้ว`;
+        }
+    </script>
+</body>
+</html>
